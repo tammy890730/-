@@ -69,7 +69,7 @@ ZIP 包含 `library.json`（`format: shiye`、`version: 1`、文獻與比較）�
 4. 等部署成功，實際檢查網址、manifest、sw.js 與版本後，才交付該網址。未驗證前不要宣稱已上線。
 5. 日後在聊天裡修改完成後，仍需將新版提交並發布到同一網站；單純修改工作目錄不會更新使用者電腦。
 
-目前環境的 GitHub API 查詢回應 Forbidden；已在環境設定草稿加入 api.github.com 及 tammy890730.github.io 的必要連線需求。草稿不代表運行中網路已套用，也不代表已取得 GitHub 發布權限。未進行遠端推送或正式網站發布。
+目前環境的 GitHub API 查詢回應 Forbidden；已在環境設定草稿加入 api.github.com 及 tammy890730.github.io 的必要連線需求。草稿不代表運行中網路已套用，也不代表已取得 GitHub 發布權限。程式已上傳至 tammy890730/- 的 main 分支；正式網站的發布結果仍待確認。
 
 ### 本機驗證
 
