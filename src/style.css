@@ -8,3 +8,5 @@
 .sidebar{overflow-y:auto}.sidebar>.brand,.sidebar>.workspace-label,.sidebar>nav,.sidebar>.topic-nav-heading,.sidebar>.topic-links,.sidebar>.storage-nav,.sidebar>.profile{flex-shrink:0}.topic-links{min-height:40px}.sidebar-note{padding-top:24px;margin-bottom:20px}@media(max-height:800px) and (min-width:761px){.sidebar-note{display:none}.storage-nav{margin-top:auto}}
 
 .pdf-import{background:#f5f6ef;border:1px solid #dce1d3;border-radius:12px;padding:18px;margin:0 0 22px}.pdf-import h3{margin:0 0 8px;font-size:16px}.pdf-import input[type=file]{max-width:100%;white-space:normal}.import-candidates{display:grid;gap:12px;margin:16px 0;max-height:300px;overflow:auto}.import-candidates>label{display:flex;align-items:flex-start;gap:10px}.import-candidates input{margin-top:4px;flex-shrink:0}.import-value{display:block;white-space:pre-wrap;font-size:13px;line-height:1.6;margin-top:4px;overflow-wrap:anywhere}
+
+.desktop-brand{display:inline-flex;align-items:center;gap:8px}.desktop-brand img{display:block;border-radius:5px}
