@@ -2,9 +2,6 @@ import {getDocument,GlobalWorkerOptions} from 'pdfjs-dist';
 import worker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type {Paper} from './data';
 GlobalWorkerOptions.workerSrc=worker;
-export const importFields=['title','authors','year','journal','keywords','abstract','design','findings'] as const;
-export type ImportField=typeof importFields[number];
-export const importLabels:Record<ImportField,string>={title:'文獻名稱',authors:'文獻作者',year:'文獻年份',journal:'發表期刊',keywords:'文獻關鍵字',abstract:'文獻摘要',design:'研究設計',findings:'研究發現'};
 export async function recognizePDF(file:File,onProgress:(text:string)=>void):Promise<{fields:Partial<Paper>;notice:string}>{
  if(file.size>100*1024*1024)throw Error('單一 PDF 上限為 100 MB。');
  if(new TextDecoder().decode(await file.slice(0,5).arrayBuffer())!=='%PDF-')throw Error('請選擇有效的 PDF 檔案。');
