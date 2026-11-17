@@ -11,8 +11,10 @@ self.addEventListener('activate',event=>event.waitUntil((async()=>{const old=(aw
 self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();});
 self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin)return;
 const scope=new URL(self.registration.scope);const path=url.pathname.slice(scope.pathname.length);
-if(url.pathname!==scope.pathname&&!FILES.includes('./'+path)&&event.request.mode!=='navigate')return;
-event.respondWith((async()=>{const cache=await caches.open(CACHE);const key=event.request.mode==='navigate'?new URL('index.html',scope).href:event.request;const hit=await cache.match(key);return hit||fetch(event.request);})());});
+if(!url.pathname.startsWith(scope.pathname))return;
+const appShell=path===''||path==='index.html';
+if(!appShell&&!FILES.includes('./'+path))return;
+event.respondWith((async()=>{const cache=await caches.open(CACHE);const key=appShell?new URL('index.html',scope).href:event.request;const hit=await cache.match(key,{ignoreSearch:true});return hit||fetch(event.request);})());});
 `;
 await writeFile('dist/sw.js',worker);await writeFile('dist/.nojekyll','');
 console.log(`PWA ${version}: ${files.length} files cached; update waits for confirmation.`);
