@@ -1,0 +1,27 @@
+import {test,expect,Page} from '@playwright/test';
+async function cancelReload(page:Page){
+ const pending=page.waitForEvent('dialog');await page.evaluate(()=>{setTimeout(()=>location.reload(),0);});const dialog=await pending;expect(dialog.type()).toBe('beforeunload');await dialog.dismiss();
+}
+async function cleanReload(page:Page){
+ let warned=false;const handler=async(dialog:any)=>{warned=true;await dialog.dismiss();};page.on('dialog',handler);try{await page.reload({timeout:10000}).catch(()=>null);expect(warned).toBe(false);}finally{page.off('dialog',handler);}
+}
+async function saved(page:Page){await expect(page.getByRole('button',{name:'資料已儲存於此瀏覽器'})).toBeVisible();}
+test('未儲存文獻與比較會攔截離開；取消離開保留內容，還原或儲存後不再提醒',async({page})=>{
+ await page.goto('/');await page.getByRole('button',{name:'進入 我的研究主題 的文獻管理',exact:true}).click();await saved(page);
+ await page.getByRole('button',{name:'新增文獻',exact:true}).click();await cleanReload(page);await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.getByRole('button',{name:'新增文獻',exact:true}).click();await page.getByLabel('文獻名稱 *').fill('尚未儲存的文獻');await cancelReload(page);await expect(page.getByLabel('文獻名稱 *')).toHaveValue('尚未儲存的文獻');await page.getByLabel('文獻名稱 *').fill('');await cleanReload(page);await expect(page.getByRole('dialog')).toHaveCount(0);
+ for(const title of ['文獻一','文獻二']){await page.getByRole('button',{name:'新增文獻',exact:true}).click();await page.getByLabel('文獻名稱 *').fill(title);await page.getByRole('button',{name:'儲存文獻',exact:true}).click();await saved(page);}
+ await cleanReload(page);await expect(page.locator('tbody tr')).toHaveCount(2);
+ await page.getByRole('button',{name:'新增比較',exact:true}).click();await page.getByLabel('比較主題 *').fill('尚未儲存的比較');await cancelReload(page);await expect(page.getByLabel('比較主題 *')).toHaveValue('尚未儲存的比較');await page.getByRole('dialog').getByText('文獻一',{exact:true}).click();await page.getByRole('dialog').getByText('文獻二',{exact:true}).click();await page.getByRole('button',{name:'儲存比較',exact:true}).click();await saved(page);await cleanReload(page);await expect(page.getByRole('heading',{name:'尚未儲存的比較',exact:true})).toBeVisible();
+});
+test('主題草稿與存檔失敗會提醒，重試成功後解除提醒',async({page})=>{
+ await page.goto('/');await page.getByRole('button',{name:'新增論文主題',exact:true}).click();await page.getByLabel('主題名稱 *').fill('新研究主題');await cancelReload(page);await expect(page.getByLabel('主題名稱 *')).toHaveValue('新研究主題');await page.getByRole('button',{name:'建立主題',exact:true}).click();await saved(page);await cleanReload(page);await expect(page.getByRole('heading',{name:'新研究主題',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'新增文獻',exact:true}).click();await page.getByLabel('文獻名稱 *').fill('筆記提醒測試');await page.getByRole('button',{name:'儲存文獻',exact:true}).click();await saved(page);await page.getByRole('button',{name:'筆記提醒測試',exact:true}).click();
+ await page.evaluate(()=>{(window as any).savedPut=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){throw new DOMException('Quota exceeded','QuotaExceededError');};});await page.getByLabel('我的理解、疑問與反思',{exact:true}).fill('存檔失敗時必須保留');await expect(page.getByRole('dialog').getByText('儲存失敗',{exact:true})).toBeVisible();await cancelReload(page);await expect(page.getByLabel('我的理解、疑問與反思',{exact:true})).toHaveValue('存檔失敗時必須保留');
+ await page.evaluate(()=>{IDBObjectStore.prototype.put=(window as any).savedPut;});await page.getByRole('dialog').getByRole('button',{name:'關閉視窗'}).click();await page.getByRole('button',{name:'重試儲存'}).click();await saved(page);await cleanReload(page);await page.getByRole('button',{name:'筆記提醒測試',exact:true}).click();await expect(page.getByLabel('我的理解、疑問與反思',{exact:true})).toHaveValue('存檔失敗時必須保留');
+});
+test('正在存檔與 PDF 辨識中的離開提醒',async({page})=>{
+ await page.goto('/');await page.getByRole('button',{name:'進入 我的研究主題 的文獻管理',exact:true}).click();await saved(page);
+ let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});await page.route('**/src/pdfImport.ts*',async route=>{await gate;await route.continue().catch(()=>{});});await page.getByRole('button',{name:'新增文獻',exact:true}).click();await page.getByRole('dialog').locator('input[type=file]').setInputFiles({name:'test.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-test')});await expect(page.getByRole('dialog').locator('input[type=file]')).toBeDisabled();await cancelReload(page);await expect(page.getByRole('dialog').locator('input[type=file]')).toBeDisabled();release();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();await page.getByLabel('文獻名稱 *').fill('寫入中測試');await page.getByRole('button',{name:'儲存文獻',exact:true}).click();await saved(page);
+ await page.evaluate(()=>{const proto=IDBTransaction.prototype as any;(window as any).originalTxListener=proto.addEventListener;proto.addEventListener=function(type:string,listener:any,options:any){const wrapped=type==='complete'?function(this:IDBTransaction,event:Event){setTimeout(()=>listener.call(this,event),2500);}:listener;return (window as any).originalTxListener.call(this,type,wrapped,options);};});await page.getByLabel('寫入中測試 閱讀進度',{exact:true}).fill('第 5 頁');await expect(page.locator('.topbar .save-label')).toHaveText('儲存中…');await cancelReload(page);await expect(page.getByLabel('寫入中測試 閱讀進度',{exact:true})).toHaveValue('第 5 頁');await saved(page);await page.evaluate(()=>{IDBTransaction.prototype.addEventListener=(window as any).originalTxListener;});await cleanReload(page);await expect(page.getByLabel('寫入中測試 閱讀進度',{exact:true})).toHaveValue('第 5 頁');
+});
