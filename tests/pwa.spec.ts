@@ -8,7 +8,7 @@ test('桌面 App：子路徑安裝、離線開啟、安全更新與資料保留'
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address() as {port:number};const url=`http://127.0.0.1:${address.port}/-/`;
  try{
  await page.goto(url);await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise<void>(r=>navigator.serviceWorker.addEventListener('controllerchange',()=>r(),{once:true}));});
- const manifest=await page.evaluate(async()=>{const link=document.querySelector<HTMLLinkElement>('link[rel=manifest]')!;return (await fetch(link.href)).json();});expect(manifest.display).toBe('standalone');expect(manifest.icons.length).toBe(2);
+ const manifest=await page.evaluate(async()=>{const link=document.querySelector<HTMLLinkElement>('link[rel=manifest]')!;return (await fetch(link.href)).json();});expect(manifest.display).toBe('standalone');expect(manifest.id).toBe('./');expect(manifest.launch_handler).toEqual({client_mode:'focus-existing'});expect(manifest.icons.length).toBe(2);
  await expect(page.getByRole('button',{name:'安裝到桌面',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'進入 我的研究主題 的文獻管理',exact:true}).click();await page.getByRole('button',{name:'先用虛構示例體驗'}).click();await expect(page.getByRole('button',{name:'資料已儲存於此瀏覽器'})).toBeVisible();
  await context.setOffline(true);await page.reload();await expect(page.locator('tbody tr')).toHaveCount(2);
